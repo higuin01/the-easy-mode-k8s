@@ -1,12 +1,12 @@
-Inspirado pelos estudos sobre Kubernetes e pela falta de um homeLab, decidi compartilhar o esqueleto do meu "Playground".
+Inspired by Kubernetes studies and the lack of a homeLab, I decided to share the skeleton of my "Playground"
 
-# Modo Fácil do Kubernetes: Implantação Automatizada de Clusters Kubernetes com o Vagrant
+# Kubernetes Easy Mode: Automated Kubernetes Cluster Deployment with Vagrant
 
-Uma ferramenta de automação baseada em Go que simplifica a implantação e o gerenciamento de clusters Kubernetes com vários nós usando o Vagrant. Ela fornece uma maneira simplificada de criar, gerenciar e monitorar ambientes de desenvolvimento Kubernetes com monitoramento integrado e recursos de GitOps.
+A Go-based automation tool that simplifies the deployment and management of multi-node Kubernetes clusters using Vagrant. It provides a streamlined way to create, manage, and monitor development Kubernetes environments with integrated monitoring and GitOps capabilities.
 
-Este projeto automatiza a configuração de um ambiente Kubernetes completo, incluindo um nó mestre e vários nós de trabalho, com componentes essenciais pré-configurados, como Cilium para rede, MetalLB para balanceamento de carga, Controlador de Entrada NGINX, ArgoCD para GitOps e Prometheus para monitoramento. A automação cuida de todos os aspectos, desde o provisionamento de VMs até a instalação e configuração de componentes do Kubernetes, tornando-a ideal para ambientes de desenvolvimento e teste.
+This project automates the setup of a complete Kubernetes environment including a master node and multiple worker nodes, with pre-configured essential components like Cilium for networking, MetalLB for load balancing, NGINX Ingress Controller, ArgoCD for GitOps, and Prometheus for monitoring. The automation handles all aspects from VM provisioning to Kubernetes component installation and configuration, making it ideal for development and testing environments.
 
-## Estrutura do Repositório
+## Repository Structure
 ```
 .
 ├── devfile.yaml              # Development environment configuration
@@ -26,8 +26,8 @@ Este projeto automatiza a configuração de um ambiente Kubernetes completo, inc
 └── Vagrantfile              # Vagrant VM configuration
 ```
 
-## Instruções de Uso
-### Pré-requisitos
+## Usage Instructions
+### Prerequisites
 - VirtualBox 6.1 or later
 - Vagrant 2.2.x or later
 - Go 1.19 or later
@@ -35,9 +35,9 @@ Este projeto automatiza a configuração de um ambiente Kubernetes completo, inc
 - 20GB of free disk space
 - Linux/Unix-based operating system (MacOS or Linux recommended)
 
-### Instalação
+### Installation
 
-1. Clone o repository:
+1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd kubernetes-easy-mode
@@ -48,29 +48,29 @@ cd kubernetes-easy-mode
 go mod download
 ```
 
-3. Faça o build da aplicação:
+3. Build the application:
 ```bash
 go build -o k8s-easy
 ```
 
 ### Quick Start
 
-1. Inicie a aplicação:
+1. Start the application:
 ```bash
 ./k8s-easy
 ```
 
-2. No menu, selecione a opção 1 para iniciar o cluster:
+2. From the menu, select option 1 to start the cluster:
 ```
-1. Iniciar Cluster
-2. Mostrar Status
-3. Destruir Cluster
-4. Sair
+1. Start Cluster
+2. Show Status
+3. Destroy Cluster
+4. Exit
 ```
 
-3. Aguarde a conclusão da inicialização do cluster (aproximadamente 10 a 15 minutos)
+3. Wait for the cluster initialization to complete (approximately 10-15 minutes)
 
-### Exemplos mais detalhados
+### More Detailed Examples
 
 1. Monitor cluster nodes:
 ```bash
@@ -82,7 +82,7 @@ go build -o k8s-easy
 ./scripts/status-k8s.sh
 ```
 
-3. Accesso ao ArgoCD UI:
+3. Access ArgoCD UI:
 ```bash
 # Get the ArgoCD admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
@@ -91,25 +91,25 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 ### Troubleshooting
 
-1. Problemas na Criação de VM
-- Erro: "VT-x não está disponível"
-* Habilite a virtualização nas configurações do BIOS
-* Certifique-se de que nenhum outro software de virtualização esteja em execução
+1. VM Creation Issues
+- Error: "VT-x is not available"
+  * Enable virtualization in BIOS settings
+  * Ensure no other virtualization software is running
 
-2. Falhas na Instalação do Kubernetes
-- Verifique os logs:
+2. Kubernetes Installation Failures
+- Check logs:
 ```bash
 vagrant ssh master-1
 sudo journalctl -u kubelet
 ```
-- Verificar conectividade de rede:
+- Verify network connectivity:
 ```bash
 kubectl get nodes
 kubectl get pods --all-namespaces
 ```
 
 3. MetalLB Configuration
-- Verificar configuração do pool de IP:
+- Verify IP pool configuration:
 ```bash
 kubectl get ipaddresspool -n metallb-system
 ```
@@ -118,8 +118,8 @@ kubectl get ipaddresspool -n metallb-system
 kubectl get pods -n metallb-system
 ```
 
-## Fluxo de Dados
-O sistema automatiza a criação e a configuração de um cluster Kubernetes por meio de uma série de etapas coordenadas, desde o provisionamento da VM até a implantação do serviço.
+## Data Flow
+The system automates the creation and configuration of a Kubernetes cluster through a series of coordinated steps, from VM provisioning to service deployment.
 
 ```ascii
 [User Input] -> [Cluster Manager] -> [Vagrant VMs] -> [Kubernetes Setup]
@@ -128,27 +128,27 @@ O sistema automatiza a criação e a configuração de um cluster Kubernetes por
               [System Monitoring] <- [MetalLB/Ingress] <- [Services]
 ```
 
-Interações de componentes:
-1. O Gerenciador de Cluster inicia a criação da VM por meio do Vagrant
-2. As VMs são provisionadas com os componentes necessários do Kubernetes
-3. O nó mestre é inicializado com o kubeadm
-4. Os nós de trabalho ingressam no cluster usando tokens gerados
-5. Plug-ins de rede (Cilium) estabelecem a rede de pods
-6. O MetalLB fornece recursos de balanceamento de carga
-7. O controlador Ingress permite acesso externo
-8. Os sistemas de monitoramento rastreiam a integridade do cluster
+Component interactions:
+1. Cluster Manager initiates VM creation through Vagrant
+2. VMs are provisioned with required Kubernetes components
+3. Master node is initialized with kubeadm
+4. Worker nodes join the cluster using generated tokens
+5. Network plugins (Cilium) establish pod networking
+6. MetalLB provides load balancing capabilities
+7. Ingress controller enables external access
+8. Monitoring systems track cluster health
 
 ## Infrastructure
 
 ![Infrastructure diagram](./docs/infra.svg)
-- VMs do VirtualBox:
-* master-1: plano de controle do Kubernetes (2 CPUs, 3 GB de RAM)
-* worker-0/1/2: ​​nós de trabalho (1 CPU, 1,5 GB de RAM cada)
+- VirtualBox VMs:
+  * master-1: Kubernetes control plane (2 CPU, 3GB RAM)
+  * worker-0/1/2: Worker nodes (1 CPU, 1.5GB RAM each)
 
-- Componentes do Kubernetes:
-* Cilium: plugin CNI para rede
-* MetalLB: balanceador de carga (intervalo de IP: 192.168.56.240-250)
-* NGINX Ingress: controlador Ingress
-* ArgoCD: plataforma GitOps
-* Prometheus: pilha de monitoramento
+- Kubernetes Components:
+  * Cilium: CNI plugin for networking
+  * MetalLB: Load balancer (IP range: 192.168.56.240-250)
+  * NGINX Ingress: Ingress controller
+  * ArgoCD: GitOps platform
+  * Prometheus: Monitoring stack
  
