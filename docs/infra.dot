@@ -1,0 +1,18 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "ingress-nginx-controller" [ label = "ingress-nginx-controller", shape =rectangle, fillcolor = "#E78F81" ];
+  "argocd" [ label = "argocd", shape =rectangle ];
+  "metrics-server" [ label = "metrics-server", shape =rectangle ];
+  "kube-prometheus-stack" [ label = "kube-prometheus-stack", shape =rectangle ];
+  "cilium" [ label = "cilium" ];
+  "metallb" [ label = "metallb" ];
+  "kubernetes-cluster" [ label = "kubernetes-cluster", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "master-node" [ label = "master-node", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "worker-node-0" [ label = "worker-node-0", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "worker-node-1" [ label = "worker-node-1", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "worker-node-2" [ label = "worker-node-2", shape =rectangle, fillcolor = "#B7E0FF" ];
+  "master-node" -> "kubernetes-cluster";
+  "worker-node-0" -> "kubernetes-cluster";
+  "worker-node-1" -> "kubernetes-cluster";
+  "worker-node-2" -> "kubernetes-cluster";
+}

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="1734pt" height="188pt"
+ viewBox="0.00 0.00 1734.22 188.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 184)">
+<title>INFRA</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-184 1730.22,-184 1730.22,4 -4,4"/>
+<!-- ingress-nginx-controller -->
+<g id="node1" class="node">
+<title>ingress-nginx-controller</title>
+<path fill="#e78f81" stroke="black" stroke-width="2" d="M149.5,-180C149.5,-180 12,-180 12,-180 6,-180 0,-174 0,-168 0,-168 0,-120 0,-120 0,-114 6,-108 12,-108 12,-108 149.5,-108 149.5,-108 155.5,-108 161.5,-114 161.5,-120 161.5,-120 161.5,-168 161.5,-168 161.5,-174 155.5,-180 149.5,-180"/>
+<text text-anchor="middle" x="80.75" y="-148.2" font-family="Arial" font-size="14.00">ingress-nginx-controller</text>
+<text text-anchor="middle" x="80.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- argocd -->
+<g id="node2" class="node">
+<title>argocd</title>
+<path fill="#e6e6e6" stroke="black" stroke-width="2" d="M308.39,-180C308.39,-180 191.12,-180 191.12,-180 185.12,-180 179.12,-174 179.12,-168 179.12,-168 179.12,-120 179.12,-120 179.12,-114 185.12,-108 191.12,-108 191.12,-108 308.39,-108 308.39,-108 314.39,-108 320.39,-114 320.39,-120 320.39,-120 320.39,-168 320.39,-168 320.39,-174 314.39,-180 308.39,-180"/>
+<text text-anchor="middle" x="249.75" y="-148.2" font-family="Arial" font-size="14.00">argocd</text>
+<text text-anchor="middle" x="249.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- metrics-server -->
+<g id="node3" class="node">
+<title>metrics-server</title>
+<path fill="#e6e6e6" stroke="black" stroke-width="2" d="M467.39,-180C467.39,-180 350.12,-180 350.12,-180 344.12,-180 338.12,-174 338.12,-168 338.12,-168 338.12,-120 338.12,-120 338.12,-114 344.12,-108 350.12,-108 350.12,-108 467.39,-108 467.39,-108 473.39,-108 479.39,-114 479.39,-120 479.39,-120 479.39,-168 479.39,-168 479.39,-174 473.39,-180 467.39,-180"/>
+<text text-anchor="middle" x="408.75" y="-148.2" font-family="Arial" font-size="14.00">metrics-server</text>
+<text text-anchor="middle" x="408.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- kube-prometheus-stack -->
+<g id="node4" class="node">
+<title>kube-prometheus-stack</title>
+<path fill="#e6e6e6" stroke="black" stroke-width="2" d="M647.9,-180C647.9,-180 509.61,-180 509.61,-180 503.61,-180 497.61,-174 497.61,-168 497.61,-168 497.61,-120 497.61,-120 497.61,-114 503.61,-108 509.61,-108 509.61,-108 647.9,-108 647.9,-108 653.9,-108 659.9,-114 659.9,-120 659.9,-120 659.9,-168 659.9,-168 659.9,-174 653.9,-180 647.9,-180"/>
+<text text-anchor="middle" x="578.75" y="-148.2" font-family="Arial" font-size="14.00">kube-prometheus-stack</text>
+<text text-anchor="middle" x="578.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- cilium -->
+<g id="node5" class="node">
+<title>cilium</title>
+<ellipse fill="#e6e6e6" stroke="black" stroke-width="2" cx="764.75" cy="-144" rx="86.54" ry="36"/>
+<text text-anchor="middle" x="764.75" y="-148.2" font-family="Arial" font-size="14.00">cilium</text>
+<text text-anchor="middle" x="764.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- metallb -->
+<g id="node6" class="node">
+<title>metallb</title>
+<ellipse fill="#e6e6e6" stroke="black" stroke-width="2" cx="955.75" cy="-144" rx="86.54" ry="36"/>
+<text text-anchor="middle" x="955.75" y="-148.2" font-family="Arial" font-size="14.00">metallb</text>
+<text text-anchor="middle" x="955.75" y="-131.4" font-family="Arial" font-size="14.00">(Kubernetes::Addon)</text>
+</g>
+<!-- kubernetes-cluster -->
+<g id="node7" class="node">
+<title>kubernetes-cluster</title>
+<path fill="#b7e0ff" stroke="black" stroke-width="2" d="M1453.32,-72C1453.32,-72 1332.19,-72 1332.19,-72 1326.19,-72 1320.19,-66 1320.19,-60 1320.19,-60 1320.19,-12 1320.19,-12 1320.19,-6 1326.19,0 1332.19,0 1332.19,0 1453.32,0 1453.32,0 1459.32,0 1465.32,-6 1465.32,-12 1465.32,-12 1465.32,-60 1465.32,-60 1465.32,-66 1459.32,-72 1453.32,-72"/>
+<text text-anchor="middle" x="1392.75" y="-40.2" font-family="Arial" font-size="14.00">kubernetes-cluster</text>
+<text text-anchor="middle" x="1392.75" y="-23.4" font-family="Arial" font-size="14.00">(OnPremises::Cluster)</text>
+</g>
+<!-- master-node -->
+<g id="node8" class="node">
+<title>master-node</title>
+<path fill="#b7e0ff" stroke="black" stroke-width="2" d="M1201.22,-180C1201.22,-180 1072.29,-180 1072.29,-180 1066.29,-180 1060.29,-174 1060.29,-168 1060.29,-168 1060.29,-120 1060.29,-120 1060.29,-114 1066.29,-108 1072.29,-108 1072.29,-108 1201.22,-108 1201.22,-108 1207.22,-108 1213.22,-114 1213.22,-120 1213.22,-120 1213.22,-168 1213.22,-168 1213.22,-174 1207.22,-180 1201.22,-180"/>
+<text text-anchor="middle" x="1136.75" y="-148.2" font-family="Arial" font-size="14.00">master-node</text>
+<text text-anchor="middle" x="1136.75" y="-131.4" font-family="Arial" font-size="14.00">(OnPremises::Node)</text>
+</g>
+<!-- master-node->kubernetes-cluster -->
+<g id="edge1" class="edge">
+<title>master-node->kubernetes-cluster</title>
+<path fill="none" stroke="black" d="M1213.56,-111.2C1243.86,-98.65 1278.75,-84.21 1309.64,-71.42"/>
+<polygon fill="black" stroke="black" points="1310.65,-74.78 1318.55,-67.73 1307.97,-68.32 1310.65,-74.78"/>
+</g>
+<!-- worker-node-0 -->
+<g id="node9" class="node">
+<title>worker-node-0</title>
+<path fill="#b7e0ff" stroke="black" stroke-width="2" d="M1372.22,-180C1372.22,-180 1243.29,-180 1243.29,-180 1237.29,-180 1231.29,-174 1231.29,-168 1231.29,-168 1231.29,-120 1231.29,-120 1231.29,-114 1237.29,-108 1243.29,-108 1243.29,-108 1372.22,-108 1372.22,-108 1378.22,-108 1384.22,-114 1384.22,-120 1384.22,-120 1384.22,-168 1384.22,-168 1384.22,-174 1378.22,-180 1372.22,-180"/>
+<text text-anchor="middle" x="1307.75" y="-148.2" font-family="Arial" font-size="14.00">worker-node-0</text>
+<text text-anchor="middle" x="1307.75" y="-131.4" font-family="Arial" font-size="14.00">(OnPremises::Node)</text>
+</g>
+<!-- worker-node-0->kubernetes-cluster -->
+<g id="edge2" class="edge">
+<title>worker-node-0->kubernetes-cluster</title>
+<path fill="none" stroke="black" d="M1336.06,-107.7C1342.94,-99.12 1350.38,-89.84 1357.54,-80.91"/>
+<polygon fill="black" stroke="black" points="1360.1,-83.31 1363.62,-73.32 1354.64,-78.94 1360.1,-83.31"/>
+</g>
+<!-- worker-node-1 -->
+<g id="node10" class="node">
+<title>worker-node-1</title>
+<path fill="#b7e0ff" stroke="black" stroke-width="2" d="M1543.22,-180C1543.22,-180 1414.29,-180 1414.29,-180 1408.29,-180 1402.29,-174 1402.29,-168 1402.29,-168 1402.29,-120 1402.29,-120 1402.29,-114 1408.29,-108 1414.29,-108 1414.29,-108 1543.22,-108 1543.22,-108 1549.22,-108 1555.22,-114 1555.22,-120 1555.22,-120 1555.22,-168 1555.22,-168 1555.22,-174 1549.22,-180 1543.22,-180"/>
+<text text-anchor="middle" x="1478.75" y="-148.2" font-family="Arial" font-size="14.00">worker-node-1</text>
+<text text-anchor="middle" x="1478.75" y="-131.4" font-family="Arial" font-size="14.00">(OnPremises::Node)</text>
+</g>
+<!-- worker-node-1->kubernetes-cluster -->
+<g id="edge3" class="edge">
+<title>worker-node-1->kubernetes-cluster</title>
+<path fill="none" stroke="black" d="M1450.11,-107.7C1443.15,-99.12 1435.62,-89.84 1428.38,-80.91"/>
+<polygon fill="black" stroke="black" points="1431.24,-78.88 1422.22,-73.32 1425.8,-83.29 1431.24,-78.88"/>
+</g>
+<!-- worker-node-2 -->
+<g id="node11" class="node">
+<title>worker-node-2</title>
+<path fill="#b7e0ff" stroke="black" stroke-width="2" d="M1714.22,-180C1714.22,-180 1585.29,-180 1585.29,-180 1579.29,-180 1573.29,-174 1573.29,-168 1573.29,-168 1573.29,-120 1573.29,-120 1573.29,-114 1579.29,-108 1585.29,-108 1585.29,-108 1714.22,-108 1714.22,-108 1720.22,-108 1726.22,-114 1726.22,-120 1726.22,-120 1726.22,-168 1726.22,-168 1726.22,-174 1720.22,-180 1714.22,-180"/>
+<text text-anchor="middle" x="1649.75" y="-148.2" font-family="Arial" font-size="14.00">worker-node-2</text>
+<text text-anchor="middle" x="1649.75" y="-131.4" font-family="Arial" font-size="14.00">(OnPremises::Node)</text>
+</g>
+<!-- worker-node-2->kubernetes-cluster -->
+<g id="edge4" class="edge">
+<title>worker-node-2->kubernetes-cluster</title>
+<path fill="none" stroke="black" d="M1572.99,-111.34C1542.43,-98.73 1507.18,-84.19 1476,-71.33"/>
+<polygon fill="black" stroke="black" points="1477.57,-68.2 1466.99,-67.62 1474.9,-74.67 1477.57,-68.2"/>
+</g>
+</g>
+</svg>
