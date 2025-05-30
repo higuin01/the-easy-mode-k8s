@@ -53,16 +53,42 @@ func (m *Manager) RunScript(scriptName string) error {
 	return nil
 }
 
+// RunScript executes a script and shows real-time output
+func (m *Manager) RunScriptargs(scriptName string, arg string) error {
+	scriptPath := m.config.GetScriptPath(scriptName)
+	cmd := exec.Command("bash", scriptPath, arg)
+	cmd.Stderr = os.Stderr
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stdout pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start script: %w", err)
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("script execution failed: %w", err)
+	}
+	return nil
+}
+
 // GetClusterStatus checks if the cluster is active
 func (m *Manager) GetClusterStatus() (bool, error) {
 	cmd := exec.Command("vagrant", "status", "--machine-readable")
 	var out strings.Builder
 	cmd.Stdout = &out
-	
+
 	if err := cmd.Run(); err != nil {
 		return false, fmt.Errorf("failed to get vagrant status: %w", err)
 	}
-	
+
 	return strings.Contains(out.String(), "master-1,state,running"), nil
 }
 
@@ -70,6 +96,16 @@ func (m *Manager) GetClusterStatus() (bool, error) {
 func (m *Manager) StartCluster() error {
 	color.Cyan("Iniciando cluster...")
 	if err := m.RunScript("up-k8s.sh"); err != nil {
+		return fmt.Errorf("failed to start cluster: %w", err)
+	}
+	color.Green("Cluster iniciado com sucesso!")
+	return nil
+}
+
+// Command executes a cluster command with the given argument
+func (m *Manager) Command(arg string) error {
+	color.Cyan("Iniciando cluster com argumento: %s...", arg)
+	if err := m.RunScriptargs("up-k8s.sh", arg); err != nil {
 		return fmt.Errorf("failed to start cluster: %w", err)
 	}
 	color.Green("Cluster iniciado com sucesso!")

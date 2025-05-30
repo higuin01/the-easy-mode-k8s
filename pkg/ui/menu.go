@@ -21,6 +21,7 @@ type ClusterManager interface {
 	StartCluster() error
 	DestroyCluster() error
 	ShowStatus() error
+	Command(arg string) error
 }
 
 // NewMenu creates a new menu instance
@@ -39,7 +40,7 @@ func (m *Menu) PrintHeader() {
 		color.Red("Erro ao obter status do cluster: %v", err)
 		return
 	}
-	
+
 	if active {
 		color.Green("Cluster: ATIVO")
 	} else {
@@ -52,13 +53,15 @@ func (m *Menu) PrintHeader() {
 func (m *Menu) PrintMenu(clusterActive bool) {
 	color.Cyan("Escolha uma opção:")
 	if clusterActive {
-		color.White("  1. Up K8s (Indisponível - cluster já ativo)")
+		color.White("init 	(Indisponível - cluster já ativo)")
 	} else {
-		color.Green("  1. Up K8s - Inicia o cluster com configuração padrão")
+		color.Green("init	- Inicia o cluster com configuração padrão")
 	}
-	color.Green("  2. Status - Mostra o status do cluster")
-	color.Red("  delete. Destroy-cluster - Deleta o cluster")
-	color.Magenta("  9. Sair")
+	color.Green("cfgmetallb     - Configura o balanceador de carga MetalLB")
+	color.Green("kps         - Instala o Kube Prometheus Stack")
+	color.Green("argocd      - Configura o Ingress do ArgoCD")
+	color.Red("delete Destroy-cluster - Deleta o cluster")
+	color.Magenta("sair - Sair do programa")
 	fmt.Println()
 }
 
@@ -72,29 +75,41 @@ func (m *Menu) GetUserInput() string {
 // ExecuteOption processes the user's choice
 func (m *Menu) ExecuteOption(option string, clusterActive bool) {
 	switch option {
-	case "1":
+	case "init":
 		if clusterActive {
 			color.Yellow("Cluster já está ativo!")
 			return
 		}
-		if err := m.clusterManager.StartCluster(); err != nil {
+		if err := m.clusterManager.Command(option); err != nil {
 			color.Red("Erro: %v", err)
 		}
-	
-	case "2":
+	case "metallb":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "kps":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "argocd":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "status":
 		if err := m.clusterManager.ShowStatus(); err != nil {
 			color.Red("Erro: %v", err)
 		}
-	
+	case "show_help":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
 	case "delete":
 		if err := m.clusterManager.DestroyCluster(); err != nil {
 			color.Red("Erro: %v", err)
 		}
-	
-	case "9":
+	case "exit", "sair":
 		color.Magenta("Saindo...")
 		os.Exit(0)
-	
 	default:
 		color.Yellow("Opção inválida!")
 	}
