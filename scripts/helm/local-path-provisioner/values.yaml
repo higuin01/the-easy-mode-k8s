@@ -1,0 +1,17 @@
+storageClass:
+  create: true
+  defaultClass: true
+  name: local-path
+  reclaimPolicy: Delete
+
+nodePathMap:
+  - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+    paths: ["/opt/local-path-provisioner"]
+
+image:
+  repository: rancher/local-path-provisioner
+  tag: v0.0.28
+
+helperImage:
+  repository: busybox
+  tag: latest

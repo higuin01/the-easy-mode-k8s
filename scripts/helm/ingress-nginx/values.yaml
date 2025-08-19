@@ -1,0 +1,14 @@
+controller:
+  service:
+    type: LoadBalancer
+  
+  config:
+    use-forwarded-headers: "true"
+    
+  metrics:
+    enabled: true
+    
+  resources:
+    requests:
+      cpu: 100m
+      memory: 90Mi

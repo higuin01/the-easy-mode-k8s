@@ -57,9 +57,10 @@ func (m *Menu) PrintMenu(clusterActive bool) {
 	} else {
 		color.Green("init	- Inicia o cluster com configuração padrão")
 	}
-	color.Green("cfgmetallb     - Configura o balanceador de carga MetalLB")
+	color.Green("nginx     - Configurando Nginx Utilizando MetalLb")
 	color.Green("kps         - Instala o Kube Prometheus Stack")
 	color.Green("argocd      - Configura o Ingress do ArgoCD")
+	color.Green("StorageDefault      - Configura o StorageClass e seta como default")
 	color.Red("delete Destroy-cluster - Deleta o cluster")
 	color.Magenta("sair - Sair do programa")
 	fmt.Println()
@@ -83,7 +84,7 @@ func (m *Menu) ExecuteOption(option string, clusterActive bool) {
 		if err := m.clusterManager.Command(option); err != nil {
 			color.Red("Erro: %v", err)
 		}
-	case "metallb":
+	case "nginx":
 		if err := m.clusterManager.Command(option); err != nil {
 			color.Red("Erro: %v", err)
 		}

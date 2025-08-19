@@ -1,0 +1,24 @@
+args:
+  - --kubelet-insecure-tls 
+  - --kubelet-preferred-address-types=InternalIP
+  - --metric-resolution=15s
+  - --v=2 
+  - --kubelet-port=10250 
+  # - --cert-dir=/tmp
+  # - --secure-port=4443
+  # - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+  # - --kubelet-use-node-status-port
+  # - --metric-resolution=15s
+  # - --kubelet-insecure-tls
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 200Mi
+
+replicas: 1
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0

@@ -1,0 +1,12 @@
+speaker:
+  frr:
+    enabled: false
+
+controller:
+  enabled: true
+
+addressPools:
+  - name: first-pool
+    protocol: layer2
+    addresses:
+    - 192.168.56.240-192.168.56.250

@@ -1,0 +1,40 @@
+prometheus:
+  prometheusSpec:
+    maximumStartupDurationSeconds: 300
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+grafana:
+  enabled: true
+  ingress:
+    enabled: false  # você mesmo vai criar seu ingress
+  grafana.ini:
+    server:
+      protocol: http  # força HTTP dentro do pod
+      http_port: 3000
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+  service:
+    type: ClusterIP  # só para comunicação interna, não expõe direto
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 5Gi
+  
+  adminPassword: admin123
+
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi

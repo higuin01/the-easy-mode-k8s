@@ -24,6 +24,10 @@ CILIUM_VERSION="1.15.13"
 METALLB_VERSION="v0.14.9"
 WORKER_SUBNET_PREFIX="10.200"
 
+# Global variables for cluster join
+join_command=""
+worker_jobs=()
+
 # Color codes for better readability
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -81,37 +85,26 @@ function define_k8s_variables() {
     KUBEADMIN_INIT="sudo kubeadm init --apiserver-advertise-address ${master_ip} --pod-network-cidr=${POD_NETWORK_CIDR}"
     K8S_CONFIG="mkdir -p /root/.kube && cp -i /etc/kubernetes/admin.conf /root/.kube/config"
     CILIUM_INSTALL="cilium install --version ${CILIUM_VERSION}"
-    CMD_METALLB="kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/${METALLB_VERSION}/config/manifests/metallb-native.yaml"
-    CMD_INSTALL_HELM="curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
-    CMD_INSTALL_NGINX="kubectl apply -f scripts/manifest/ingress/manifest.yaml"
-    CMD_INSTALL_ARGOCD="kubectl create namespace argocd && kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
-    CMD_METRIC_SERVER="kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
-    CMD_KPS="helm repo add prometheus-community https://prometheus-community.github.io/helm-charts &&helm install my-kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 72.6.2 --set prometheus.prometheusSpec.maximumStartupDurationSeconds=300"
-    
+    CMD_HELM_INSTALL="/root/scripts/helm-install.sh helm"
+    CMD_HELM_REPOS="/root/scripts/helm-install.sh repos"
+    CMD_LOCAL_PATH="/root/scripts/helm-install.sh local-path"
+    CMD_METRICS_SERVER="/root/scripts/helm-install.sh metrics-server"
+    CMD_METALLB="/root/scripts/helm-install.sh metallb"
+    CMD_INSTALL_NGINX="/root/scripts/helm-install.sh ingress"
+    CMD_INSTALL_ARGOCD="/root/scripts/helm-install.sh argocd"
+    CMD_KPS="/root/scripts/helm-install.sh prometheus"
     # TLS certificate creation
-    TLS_CREATE="openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj '/CN=*.demo.com/O=HigorSilva' -addext 'subjectAltName = DNS:*.${MYDOMAIN}'"
 }
 
 # Configure MetalLB
 function config_metal_lb() {
     local master_ip=$1
     log_info "Configurando MetalLB"
-    EXEC_METALLB="kubectl apply -f scripts/manifest/metallb/manifest.yaml"
-    ssh -o StrictHostKeyChecking=no -n root@${master_ip} "$EXEC_METALLB"
+    define_k8s_variables "$master_ip"
+    ssh -o StrictHostKeyChecking=no -n root@${master_ip} "$CMD_METALLB"
+    sleep 2
+    ssh -o StrictHostKeyChecking=no -n root@${master_ip} "kubectl apply -f /root/scripts/helm/metallb/manifest.yaml"
     log_success "MetalLB configurado com sucesso"
-}
-
-# Configure ArgoCD Ingress
-function config_argocd_ingress() {
-    local master_ip=$1
-    log_info "Configurando TLS para o ArgoCD"
-    EXEC_TLS="kubectl create secret tls high-domain-secret --key /root/tls.key --cert /root/tls.crt -n argocd"
-    ssh -o StrictHostKeyChecking=no -n root@${master_ip} "$EXEC_TLS"
-    
-    log_info "Configurando ArgoCD Ingress"
-    EXEC_ARGOCD="kubectl apply -f /root/scripts/manifest/argocd/argocd-ingress.yaml -n argocd"
-    ssh -o StrictHostKeyChecking=no -n root@${master_ip} "$EXEC_ARGOCD"
-    log_success "ArgoCD Ingress configurado com sucesso"
 }
 
 # Wait for pods with specific label to be running
@@ -150,7 +143,18 @@ function kps() {
                 # Initialize Kubernetes cluster
                 log_info "execute Helm install"
                 ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_KPS}"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "kubectl apply -f /root/scripts/helm/prometheus/grafana-ingress.yaml -n monitoring"
                 ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+function update-repos(){
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # define variables for master node
+                define_k8s_variables "$IP"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_HELM_REPOS}"
         esac
     done < "$MACHINES_FILE"
 }
@@ -163,22 +167,13 @@ function k8sInstallServer () {
                 # Define variables for master node
                 define_k8s_variables "$IP"
                 
-                # Create TLS certificates
-                log_info "Criando certificados TLS"
-                ssh -o StrictHostKeyChecking=no -n root@${IP} "$TLS_CREATE"
-                
                 # Initialize Kubernetes cluster
                 log_info "Inicializando cluster Kubernetes"
                 ssh -o StrictHostKeyChecking=no -n root@${IP} "
                     ${KUBEADMIN_INIT} &&
                     ${K8S_CONFIG} &&
-                    ${CILIUM_INSTALL} &&
-                    ${CMD_METALLB} &&
-                    ${CMD_INSTALL_HELM} &&
-                    ${CMD_INSTALL_NGINX} &&
-                    ${CMD_METRIC_SERVER}
-                "
-                
+                    ${CILIUM_INSTALL}
+                    "
                 # Get join command for worker nodes
                 log_info "Obtendo comando para adicionar workers ao cluster"
                 join_command=$(ssh -o StrictHostKeyChecking=no -n root@${IP} "sudo kubeadm token create --print-join-command")
@@ -187,19 +182,47 @@ function k8sInstallServer () {
                     exit 1
                 fi
                 log_success "Cluster Kubernetes inicializado com sucesso"
+                log_info "Comando de join obtido: ${join_command}"
+
+                workerAdd
+                
+                for job in "${worker_jobs[@]}"; do
+                    wait $job
+                done
+                log_success "Todos os workers foram adicionados ao cluster"
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+                log_info "Finalizando config do cluster Kubernetes"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "
+                    ${CMD_HELM_INSTALL} &&
+                    ${CMD_HELM_REPOS} &&
+                    ${CMD_LOCAL_PATH} &&
+                    ${CMD_METRICS_SERVER}
+                " 
                 ;;
         esac
     done < "$MACHINES_FILE"
 }
 function workerAdd () {
     log_info "Adicionando nós workers ao cluster"
-    worker_jobs=()
+    
+    if [ -z "$join_command" ]; then
+        log_error "Comando de join não está disponível"
+        return 1
+    fi
     while read IP FQDN HOST SUBNET; do
         case "$HOST" in
             worker-*)
                 log_info "Adicionando worker ${HOST} ao cluster"
                 # Run worker joins in background for parallel execution
-                ssh -o StrictHostKeyChecking=no -n root@${IP} "sudo ${join_command}" &
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${join_command} --node-name ${HOST}" &
                 worker_jobs+=($!)
                 ;;
             *)
@@ -208,22 +231,18 @@ function workerAdd () {
         esac
     done < "$MACHINES_FILE"
 }
-function metalLBcfg() {
-    log_info "Configurando componentes adicionais"
+function nginx() {
+    log_info "Configurando Nginx Ingress adicionais"
     while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
         case "$HOST" in
             "server")
-                # Wait for MetalLB pods to be running
-                log_info "Aguardando pods do MetalLB"
-                TIMEOUT=300 # 5 minutes
-                if ! wait_for_pods "$IP" "metallb-system" "app=metallb" "$TIMEOUT"; then
-                    log_warning "Timeout aguardando pods do MetalLB, continuando mesmo assim"
-                fi
-                sleep 60
-                # Configure MetalLB
+                # # Configure MetalLB and NGINX Ingress
                 config_metal_lb "$IP"
+                # Install NGINX Ingress
+                define_k8s_variables "$IP"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "$CMD_INSTALL_NGINX"
                 
-                log_success "Componentes adicionais configurados com sucesso"
+                log_success "Componente Nginx Ingress Instalado com sucesso"
                 ;;
         esac
     done < "$MACHINES_FILE"
@@ -239,10 +258,9 @@ function argoCd() {
                 # Initialize Kubernetes cluster
                 log_info "execute Helm install"
                 ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_ARGOCD}"
-                                
-                sleep 30
+                sleep 5
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "kubectl apply -f /root/scripts/helm/argocd/argocd-ingress.yaml -n argocd"
                 # Configure ArgoCD Ingress
-                config_argocd_ingress "$IP"
                 ;;
         esac
     done < "$MACHINES_FILE"
@@ -386,12 +404,8 @@ function runMain() {
     # Initialize Kubernetes cluster on master node
     k8sInstallServer
     sleep 1
-
     # Add worker and wait
-    workerAdd
-    for job in "${worker_jobs[@]}"; do
-        wait $job
-    done
+
     
     log_success "Todos os workers foram adicionados ao cluster"
     # Calculate execution time
@@ -413,14 +427,17 @@ case "$1" in
     "init")
         runMain
         ;;
+    "nginx")
+        nginx
+        ;;
     "argocd")
         argoCd
         ;;
-    "metallb")
-        metalLBcfg
-        ;;
     "kps")
         kps
+        ;;
+    "repos")
+        update-repos
         ;;
     "help")
         show_help

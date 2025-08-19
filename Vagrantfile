@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
-    (0..1).each do |i|
+    (0..0).each do |i|
         config.vm.define "worker-#{i}" do |k8s|
             k8s.vm.box = "ubuntu/jammy64"
             k8s.vm.hostname = "worker-#{i}"

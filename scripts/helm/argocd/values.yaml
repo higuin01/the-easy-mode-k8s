@@ -1,0 +1,7 @@
+server:
+  ingress:
+    enabled: false
+
+configs:
+  params:
+    server.insecure: false
