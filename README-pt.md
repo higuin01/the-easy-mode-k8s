@@ -4,26 +4,30 @@ Inspirado pelos estudos sobre Kubernetes e pela falta de um homeLab, decidi comp
 
 Uma ferramenta de automação baseada em Go que simplifica a implantação e o gerenciamento de clusters Kubernetes com vários nós usando o Vagrant. Ela fornece uma maneira simplificada de criar, gerenciar e monitorar ambientes de desenvolvimento Kubernetes com monitoramento integrado e recursos de GitOps.
 
-Este projeto automatiza a configuração de um ambiente Kubernetes completo, incluindo um nó mestre e vários nós de trabalho, com componentes essenciais pré-configurados, como Cilium para rede, MetalLB para balanceamento de carga, Controlador de Entrada NGINX, ArgoCD para GitOps e Prometheus para monitoramento. A automação cuida de todos os aspectos, desde o provisionamento de VMs até a instalação e configuração de componentes do Kubernetes, tornando-a ideal para ambientes de desenvolvimento e teste.
+Este projeto automatiza a configuração de um ambiente Kubernetes completo, incluindo um nó mestre e vários nós de trabalho, com componentes essenciais pré-configurados, como Cilium para rede, MetalLB para balanceamento de carga, Controlador de Entrada NGINX, ArgoCD para GitOps e Prometheus para monitoramento. A automação agora utiliza Helm charts com templates padrão para facilitar o gerenciamento e atualizações, cuidando de todos os aspectos, desde o provisionamento de VMs até a instalação e configuração de componentes do Kubernetes, tornando-a ideal para ambientes de desenvolvimento e teste.
 
 ## Estrutura do Repositório
 ```
 .
-├── devfile.yaml              # Development environment configuration
-├── main.go                   # Application entry point
-├── pkg/                      # Core application packages
-│   ├── cluster/             # Cluster management implementation
-│   ├── config/              # Configuration handling
-│   └── ui/                  # User interface components
-├── scripts/                  # Automation scripts
-│   ├── k8s-install.sh       # Kubernetes installation script
-│   ├── up-k8s.sh           # Cluster initialization script
-│   ├── manifest/            # Kubernetes manifests
-│   │   ├── argocd/         # ArgoCD configuration
-│   │   ├── ingress/        # NGINX Ingress configuration
-│   │   └── metallb/        # MetalLB configuration
-│   └── sys-moni.sh         # System monitoring script
-└── Vagrantfile              # Vagrant VM configuration
+├── devfile.yaml              # Configuração do ambiente de desenvolvimento
+├── main.go                   # Ponto de entrada da aplicação
+├── pkg/                      # Pacotes principais da aplicação
+│   ├── cluster/             # Implementação de gerenciamento de cluster
+│   ├── config/              # Manipulação de configuração
+│   └── ui/                  # Componentes de interface do usuário
+├── scripts/                  # Scripts de automação
+│   ├── k8s-install.sh       # Script de instalação do Kubernetes
+│   ├── up-k8s.sh           # Script de inicialização do cluster
+│   ├── helm-install.sh     # Instalação de componentes via Helm
+│   ├── helm/                # Valores e configurações Helm
+│   │   ├── argocd/         # Valores Helm do ArgoCD
+│   │   ├── ingress-nginx/  # Valores Helm do NGINX Ingress
+│   │   ├── metallb/        # Valores Helm do MetalLB
+│   │   ├── prometheus/     # Valores Helm do Prometheus Stack
+│   │   ├── metrics-server/ # Valores Helm do Metrics Server
+│   │   └── local-path-provisioner/ # Valores do provisionador de storage
+│   └── sys-moni.sh         # Script de monitoramento do sistema
+└── Vagrantfile              # Configuração de VM do Vagrant
 ```
 
 ## Instruções de Uso
@@ -72,21 +76,40 @@ go build -o k8s-easy
 
 ### Exemplos mais detalhados
 
-1. Monitor cluster nodes:
+1. Monitorar nós do cluster:
 ```bash
 ./scripts/monitor-node.sh
 ```
 
-2. Check cluster status:
+2. Verificar status do cluster:
 ```bash
 ./scripts/status-k8s.sh
 ```
 
-3. Accesso ao ArgoCD UI:
+3. Instalar componentes individualmente via Helm:
 ```bash
-# Get the ArgoCD admin password
+# Instalar componentes específicos
+./scripts/helm-install.sh metallb
+./scripts/helm-install.sh ingress
+./scripts/helm-install.sh argocd
+./scripts/helm-install.sh prometheus
+
+# Instalar todos os componentes de uma vez
+./scripts/helm-install.sh all
+```
+
+4. Acesso ao ArgoCD UI:
+```bash
+# Obter a senha do admin do ArgoCD
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-# Access via https://argocd.high.sh
+# Acessar via https://argocd.high.sh
+```
+
+5. Acesso ao Grafana UI:
+```bash
+# Credenciais padrão: admin/admin123
+# Acessar via port-forward ou criar ingress
+kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
 ```
 
 ### Troubleshooting
@@ -145,10 +168,12 @@ Interações de componentes:
 * master-1: plano de controle do Kubernetes (2 CPUs, 3 GB de RAM)
 * worker-0/1/2: ​​nós de trabalho (1 CPU, 1,5 GB de RAM cada)
 
-- Componentes do Kubernetes:
+- Componentes do Kubernetes (via Helm):
 * Cilium: plugin CNI para rede
 * MetalLB: balanceador de carga (intervalo de IP: 192.168.56.240-250)
-* NGINX Ingress: controlador Ingress
-* ArgoCD: plataforma GitOps
-* Prometheus: pilha de monitoramento
+* NGINX Ingress: controlador Ingress com serviço LoadBalancer
+* ArgoCD: plataforma GitOps com ingress customizado
+* Prometheus Stack: monitoramento completo com Grafana
+* Local Path Provisioner: classe de storage padrão
+* Metrics Server: coleta de métricas de recursos
  
