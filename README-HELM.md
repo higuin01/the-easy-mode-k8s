@@ -16,8 +16,6 @@ helm/
 │   └── values.yaml          # Configurações do ArgoCD
 ├── prometheus/
 │   └── values.yaml          # Configurações do Prometheus Stack
-├── local-path-provisioner/
-│   └── values.yaml          # Configurações do Local Path Provisioner
 └── metrics-server/
     └── values.yaml          # Configurações do Metrics Server
 ```
