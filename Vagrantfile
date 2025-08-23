@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
         end
     end
 
-    (0..1).each do |i|
+    (0..2).each do |i|
         config.vm.define "worker-#{i}" do |k8s|
             k8s.vm.box = "ubuntu/jammy64"
             k8s.vm.hostname = "worker-#{i}"
@@ -48,11 +48,10 @@ Vagrant.configure("2") do |config|
 
             k8s.vm.provider "virtualbox" do |vb|
               vb.gui = false
-              vb.cpus = 1
-              vb.memory = "1512"
+              vb.cpus = 2
+              vb.memory = "2500"
             end
         end
     end
 end
-
 #Dh${1q=kMr45TS9@1#

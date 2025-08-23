@@ -57,10 +57,20 @@ func (m *Menu) PrintMenu(clusterActive bool) {
 	} else {
 		color.Green("init	- Inicia o cluster com configuração padrão")
 	}
+	color.Yellow("cp - (copyScript) - Copia os scripts de configuração para o cluster")
+	color.Blue("repos - Atualiza os repositórios helm do cluster")
 	color.Green("nginx     - Configurando Nginx Utilizando MetalLb")
 	color.Green("kps         - Instala o Kube Prometheus Stack")
 	color.Green("argocd      - Configura o Ingress do ArgoCD")
-	color.Green("StorageDefault      - Configura o StorageClass e seta como default")
+	color.Green("lgtm       - Configura o cluster com o LGTM")
+	color.Green("loki       - Configura o Loki para logs")
+	color.Green("minio      - Configura o Minio para object storage")
+	color.Green("tempo	   - Configura o Tempo para monitoramento de tempo")
+	color.Green("mimir       - Configura o Mimir para logs e métricas")
+	color.Green("otel       - Configura OpenTelemetry (Operator + Collector)")
+
+	color.Blue("fix_dns - Corrige o DNS do cluster")
+	// color.Green("StorageDefault      - Configura o StorageClass e seta como default")
 	color.Red("delete Destroy-cluster - Deleta o cluster")
 	color.Magenta("sair - Sair do programa")
 	fmt.Println()
@@ -84,7 +94,43 @@ func (m *Menu) ExecuteOption(option string, clusterActive bool) {
 		if err := m.clusterManager.Command(option); err != nil {
 			color.Red("Erro: %v", err)
 		}
+	case "cp":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "repos":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
 	case "nginx":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "lgtm":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "loki":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "minio":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "tempo":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "mimir":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "otel":
+		if err := m.clusterManager.Command(option); err != nil {
+			color.Red("Erro: %v", err)
+		}
+	case "fix-dns":
 		if err := m.clusterManager.Command(option); err != nil {
 			color.Red("Erro: %v", err)
 		}

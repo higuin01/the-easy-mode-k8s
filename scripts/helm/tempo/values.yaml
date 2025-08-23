@@ -1,0 +1,101 @@
+# Grafana Tempo Distributed Configuration
+fullnameOverride: tempo
+
+traces:
+  jaeger:
+    grpc:
+      enabled: true
+    thriftHttp:
+      enabled: true
+  zipkin:
+    enabled: true
+  otlp:
+    http:
+      enabled: true
+    grpc:
+      enabled: true
+      
+# Configuração específica para OTLP
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+distributor:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+ingester:
+  replicas: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  persistence:
+    enabled: true
+    size: 10Gi
+
+
+querier:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+queryFrontend:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+compactor:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Minimal configuration for development
+metaMonitoring:
+  serviceMonitor:
+    enabled: true
+
+# Global configuration for single replica setup
+global_overrides:
+  ingestion_rate_limit_bytes: 20000000
+  ingestion_burst_size_bytes: 30000000
+  max_traces_per_user: 10000
+  ingestion_rate_strategy: local
+  max_global_traces_per_user: 0
+
+
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+    pool:
+      max_workers: 100
+      queue_depth: 10000

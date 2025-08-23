@@ -4,6 +4,13 @@ controller:
   
   config:
     use-forwarded-headers: "true"
+    # Enable tracing
+    enable-opentracing: "true"
+    jaeger-collector-host: "otel-collector-collector.monitoring.svc.cluster.local"
+    jaeger-collector-port: "14268"
+    jaeger-service-name: "nginx-ingress"
+    jaeger-sampler-type: "const"
+    jaeger-sampler-param: "1"
     
   metrics:
     enabled: true

@@ -93,6 +93,13 @@ function define_k8s_variables() {
     CMD_INSTALL_NGINX="/root/scripts/helm-install.sh ingress"
     CMD_INSTALL_ARGOCD="/root/scripts/helm-install.sh argocd"
     CMD_KPS="/root/scripts/helm-install.sh prometheus"
+    CMD_INSTALL_LGTM="/root/scripts/helm-install.sh lgtm"
+    CMD_INSTALL_LOKI="/root/scripts/helm-install.sh loki"
+    CMD_INSTALL_PROMTAIL="/root/scripts/helm-install.sh promtail"
+    CMD_INSTALL_MIMIR="/root/scripts/helm-install.sh mimir"
+    CMD_INSTALL_TEMPO="/root/scripts/helm-install.sh tempo"
+    CMD_INSTALL_MINIO="/root/scripts/helm-install.sh minio"
+    CMD_INSTALL_OTEL_OPERATOR="/root/scripts/helm-install.sh otel"
     # TLS certificate creation
 }
 
@@ -265,6 +272,142 @@ function argoCd() {
         esac
     done < "$MACHINES_FILE"
 }
+function lgtm () {
+    log_info "Instalando LGTM"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_LGTM}"
+                sleep 1
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+function loki() {
+    log_info "Instalando Loki"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_LOKI}"
+                sleep 1
+                log_info "executando agente do Loki chamado promtail"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_PROMTAIL}"
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+function minio() {
+    log_info "Instalando MinIO"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_MINIO}"
+                sleep 1
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+function mimir() {
+    log_info "Instalando Mimir"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_MIMIR}"
+                sleep 1
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+function tempo() {
+    log_info "Instalando Tempo"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_TEMPO}"
+                sleep 1
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+
+function otel () {
+    log_info "Instalando OpenTelemetry Operator"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                # Define variables for master node
+                define_k8s_variables "$IP"
+
+                # Initialize Kubernetes cluster
+                log_info "execute Helm install"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "${CMD_INSTALL_OTEL_OPERATOR}"
+                sleep 1
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+
+function fix_dns() {
+    log_info "Corrigindo DNS para acesso à internet nos pods"
+    while read -r IP FQDN HOST SUBNET || [ -n "$IP" ]; do
+        case "$HOST" in
+            "server")
+                log_info "Atualizando configuração CoreDNS"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} 'kubectl patch configmap coredns -n kube-system --patch="data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+           pods insecure
+           fallthrough in-addr.arpa ip6.arpa
+           ttl 30
+        }
+        prometheus :9153
+        forward . 8.8.8.8 8.8.4.4
+        cache 30
+        loop
+        reload
+        loadbalance
+    }"'
+                
+                log_info "Reiniciando CoreDNS"
+                ssh -o StrictHostKeyChecking=no -n root@${IP} "kubectl rollout restart deployment/coredns -n kube-system"
+                
+                log_success "DNS corrigido com sucesso"
+                ;;
+        esac
+    done < "$MACHINES_FILE"
+}
+
 function show_help() {
     echo "Uso: $0 <comando>"
     echo ""
@@ -415,6 +558,16 @@ function runMain() {
     seconds=$((duration % 60))
     log_success "Tempo de execução: ${minutes} minuto(s) e ${seconds} segundo(s)."
 }
+function copyScripts() {
+    log_info "Copiando scripts para todos os nós"
+    while read IP FQDN HOST SUBNET; do 
+        case "$HOST" in
+            "server")
+                scp -r scripts/* root@${IP}:~/scripts
+                log_success "Scripts copiados para o nó ${HOST}"
+        esac
+    done < "$MACHINES_FILE"
+}
 # Check if a command was provided
 if [ $# -eq 0 ]; then
     log_error "Nenhum comando fornecido"
@@ -426,6 +579,30 @@ fi
 case "$1" in
     "init")
         runMain
+        ;;
+    "cp")
+        copyScripts
+        ;;
+    "otel")
+        otel
+        ;;
+    "fix-dns")
+        fix_dns
+        ;;
+    "lgtm")
+        lgtm
+        ;;
+    "minio")
+        minio
+        ;;
+    "loki")
+        loki
+        ;;
+    "mimir")
+        mimir
+        ;;
+    "tempo")
+        tempo
         ;;
     "nginx")
         nginx

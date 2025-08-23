@@ -1,0 +1,185 @@
+# OpenTelemetry Collector Configuration
+mode: daemonset
+
+# Image configuration
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: "0.91.0"
+
+# Resources - minimal for lab
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Configuration
+config:
+  receivers:
+    # OTLP receiver for applications
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+    
+    # Kubernetes logs (similar to Promtail)
+    filelog:
+      include:
+        - /var/log/pods/*/*/*.log
+      exclude:
+        - /var/log/pods/*/otc-container/*.log
+      start_at: end
+      include_file_path: true
+      include_file_name: false
+      operators:
+        - type: router
+          id: get-format
+          routes:
+            - output: parser-docker
+              expr: 'body matches "^\\{"'
+            - output: parser-crio
+              expr: 'body matches "^[^ Z]+ "'
+            - output: parser-containerd
+              expr: 'true'
+        - type: regex_parser
+          id: parser-crio
+          regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+          timestamp:
+            parse_from: attributes.time
+            layout_type: gotime
+            layout: '2006-01-02T15:04:05.999999999Z07:00'
+        - type: regex_parser
+          id: parser-containerd
+          regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+          timestamp:
+            parse_from: attributes.time
+            layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+        - type: json_parser
+          id: parser-docker
+          timestamp:
+            parse_from: attributes.time
+            layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+        - type: move
+          from: attributes.log
+          to: body
+        - type: add
+          field: attributes.source
+          value: kubernetes
+
+  processors:
+    # Batch processor
+    batch:
+      timeout: 1s
+      send_batch_size: 1024
+    
+    # Resource processor to add cluster info
+    resource:
+      attributes:
+        - key: cluster.name
+          value: "local-k8s"
+          action: insert
+        - key: deployment.environment  
+          value: "development"
+          action: insert
+    
+    # K8s attributes processor
+    k8sattributes:
+      auth_type: "serviceAccount"
+      passthrough: false
+      filter:
+        node_from_env_var: KUBE_NODE_NAME
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.namespace.name
+          - k8s.node.name
+          - k8s.pod.start_time
+
+  exporters:
+    # Loki for logs
+    loki:
+      endpoint: http://loki-gateway.monitoring.svc.cluster.local:80/loki/api/v1/push
+      tenant_id: ""
+      
+    # Tempo for traces  
+    otlp/tempo:
+      endpoint: http://tempo-distributor.monitoring.svc.cluster.local:4317
+      tls:
+        insecure: true
+        
+    # Prometheus for metrics (via remote write to Mimir)
+    prometheusremotewrite:
+      endpoint: http://mimir-distributor.monitoring.svc.cluster.local:8080/api/v1/push
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      # Logs pipeline
+      logs:
+        receivers: [otlp, filelog]
+        processors: [k8sattributes, resource, batch]
+        exporters: [loki]
+      
+      # Metrics pipeline  
+      metrics:
+        receivers: [otlp]
+        processors: [k8sattributes, resource, batch]
+        exporters: [prometheusremotewrite]
+        
+      # Traces pipeline
+      traces:
+        receivers: [otlp]
+        processors: [k8sattributes, resource, batch]
+        exporters: [otlp/tempo]
+
+# Ports
+ports:
+  otlp:
+    enabled: true
+    containerPort: 4317
+    servicePort: 4317
+    hostPort: 4317
+    protocol: TCP
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    hostPort: 4318
+    protocol: TCP
+
+# Volume mounts for log collection
+extraVolumes:
+  - name: varlogpods
+    hostPath:
+      path: /var/log/pods
+  - name: varlibdockercontainers
+    hostPath:
+      path: /var/lib/docker/containers
+
+extraVolumeMounts:
+  - name: varlogpods
+    mountPath: /var/log/pods
+    readOnly: true
+  - name: varlibdockercontainers
+    mountPath: /var/lib/docker/containers
+    readOnly: true
+
+# Tolerations to run on all nodes
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+
+# Service Monitor
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack

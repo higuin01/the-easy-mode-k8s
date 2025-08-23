@@ -1,0 +1,16 @@
+# OpenTelemetry Operator Configuration - Minimal for v0.93.0
+replicaCount: 1
+
+# Manager configuration
+manager:
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    ENABLE_WEBHOOKS: "true"
+    # Enable auto-instrumentation across namespaces
+    OTEL_RESOURCE_ATTRIBUTES: "service.name=opentelemetry-operator"

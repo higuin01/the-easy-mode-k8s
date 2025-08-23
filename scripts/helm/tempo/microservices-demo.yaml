@@ -1,0 +1,373 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "opentelemetry-operator-system/default-instrumentation"
+    spec:
+      containers:
+      - name: app
+        image: openjdk:11-jdk-slim
+        command: ["sh", "-c"]
+        args:
+        - |
+          cat > UserService.java << 'EOF'
+          import java.net.http.HttpClient;
+          import java.net.http.HttpRequest;
+          import java.net.http.HttpResponse;
+          import java.net.URI;
+          import java.time.Duration;
+          import com.sun.net.httpserver.HttpServer;
+          import com.sun.net.httpserver.HttpHandler;
+          import com.sun.net.httpserver.HttpExchange;
+          import java.net.InetSocketAddress;
+          import java.io.IOException;
+          import java.io.OutputStream;
+          import java.util.concurrent.Executors;
+          
+          public class UserService {
+              private static final HttpClient client = HttpClient.newBuilder()
+                  .connectTimeout(Duration.ofSeconds(10))
+                  .build();
+              
+              public static void main(String[] args) throws Exception {
+                  HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+                  
+                  server.createContext("/users", new UserHandler());
+                  server.createContext("/health", new HealthHandler());
+                  
+                  server.setExecutor(Executors.newFixedThreadPool(4));
+                  server.start();
+                  
+                  System.out.println("🚀 User Service rodando na porta 8080");
+                  
+                  // Background task para gerar traces
+                  Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> {
+                      try {
+                          callOrderService();
+                      } catch (Exception e) {
+                          System.out.println("Erro ao chamar order service: " + e.getMessage());
+                      }
+                  }, 10, 30, java.util.concurrent.TimeUnit.SECONDS);
+              }
+              
+              static class UserHandler implements HttpHandler {
+                  public void handle(HttpExchange exchange) throws IOException {
+                      System.out.println("👤 Recebida requisição para /users");
+                      
+                      String response = "{\"users\": [{\"id\": 1, \"name\": \"João\"}, {\"id\": 2, \"name\": \"Maria\"}]}";
+                      exchange.getResponseHeaders().set("Content-Type", "application/json");
+                      exchange.sendResponseHeaders(200, response.length());
+                      
+                      OutputStream os = exchange.getResponseBody();
+                      os.write(response.getBytes());
+                      os.close();
+                  }
+              }
+              
+              static class HealthHandler implements HttpHandler {
+                  public void handle(HttpExchange exchange) throws IOException {
+                      String response = "{\"status\": \"healthy\", \"service\": \"user-service\"}";
+                      exchange.getResponseHeaders().set("Content-Type", "application/json");
+                      exchange.sendResponseHeaders(200, response.length());
+                      
+                      OutputStream os = exchange.getResponseBody();
+                      os.write(response.getBytes());
+                      os.close();
+                  }
+              }
+              
+              private static void callOrderService() throws Exception {
+                  System.out.println("📞 Chamando Order Service...");
+                  
+                  HttpRequest request = HttpRequest.newBuilder()
+                      .uri(URI.create("http://order-service:8080/orders"))
+                      .timeout(Duration.ofSeconds(10))
+                      .build();
+                  
+                  HttpResponse<String> response = client.send(request, 
+                      HttpResponse.BodyHandlers.ofString());
+                  
+                  System.out.println("✅ Order Service respondeu: " + response.statusCode());
+              }
+          }
+          EOF
+          
+          javac UserService.java
+          java UserService
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: "user-service"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=user-service,service.version=1.0.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: default
+spec:
+  selector:
+    app: user-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+      annotations:
+        instrumentation.opentelemetry.io/inject-nodejs: "opentelemetry-operator-system/default-instrumentation"
+    spec:
+      containers:
+      - name: app
+        image: node:16-alpine
+        command: ["sh", "-c"]
+        args:
+        - |
+          cat > server.js << 'EOF'
+          const http = require('http');
+          const url = require('url');
+          
+          const server = http.createServer(async (req, res) => {
+            const parsedUrl = url.parse(req.url, true);
+            const path = parsedUrl.pathname;
+            
+            console.log(`📡 ${req.method} ${path}`);
+            
+            res.setHeader('Content-Type', 'application/json');
+            
+            if (path === '/orders') {
+              // Simular chamada para user service
+              await callUserService();
+              
+              res.writeHead(200);
+              res.end(JSON.stringify({
+                orders: [
+                  { id: 1, userId: 1, total: 99.99 },
+                  { id: 2, userId: 2, total: 149.99 }
+                ]
+              }));
+              return;
+            }
+            
+            if (path === '/health') {
+              res.writeHead(200);
+              res.end(JSON.stringify({ 
+                status: 'healthy', 
+                service: 'order-service' 
+              }));
+              return;
+            }
+            
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Not found' }));
+          });
+          
+          async function callUserService() {
+            console.log('👤 Chamando User Service...');
+            
+            return new Promise((resolve, reject) => {
+              const options = {
+                hostname: 'user-service',
+                port: 8080,
+                path: '/users',
+                method: 'GET'
+              };
+              
+              const req = http.request(options, (res) => {
+                console.log(`✅ User Service respondeu: ${res.statusCode}`);
+                resolve();
+              });
+              
+              req.on('error', (err) => {
+                console.log(`❌ Erro ao chamar User Service: ${err.message}`);
+                resolve(); // Não falhar por causa disso
+              });
+              
+              req.setTimeout(5000);
+              req.end();
+            });
+          }
+          
+          // Background task
+          setInterval(async () => {
+            console.log('🔄 Processando pedidos em background...');
+            await new Promise(resolve => setTimeout(resolve, 200));
+            console.log('✅ Processamento concluído');
+          }, 25000);
+          
+          server.listen(8080, '0.0.0.0', () => {
+            console.log('🚀 Order Service rodando na porta 8080');
+          });
+          EOF
+          
+          node server.js
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: "order-service"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=order-service,service.version=1.0.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: default
+spec:
+  selector:
+    app: order-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "opentelemetry-operator-system/default-instrumentation"
+    spec:
+      containers:
+      - name: app
+        image: python:3.9
+        command: ["sh", "-c"]
+        args:
+        - |
+          cat > gateway.py << 'EOF'
+          from http.server import HTTPServer, BaseHTTPRequestHandler
+          import json
+          import urllib.request
+          import urllib.parse
+          import time
+          import threading
+          
+          class GatewayHandler(BaseHTTPRequestHandler):
+              def do_GET(self):
+                  print(f"🌐 Gateway recebeu: {self.path}")
+                  
+                  if self.path == '/api/users':
+                      self.proxy_request('http://user-service:8080/users')
+                  elif self.path == '/api/orders':
+                      self.proxy_request('http://order-service:8080/orders')
+                  elif self.path == '/health':
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      response = {"status": "healthy", "service": "api-gateway"}
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+              
+              def proxy_request(self, target_url):
+                  try:
+                      print(f"🔄 Proxy para: {target_url}")
+                      
+                      req = urllib.request.Request(target_url)
+                      with urllib.request.urlopen(req, timeout=10) as response:
+                          data = response.read()
+                          
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      self.wfile.write(data)
+                      
+                      print("✅ Proxy concluído com sucesso")
+                      
+                  except Exception as e:
+                      print(f"❌ Erro no proxy: {e}")
+                      self.send_response(500)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      error_response = {"error": str(e)}
+                      self.wfile.write(json.dumps(error_response).encode())
+              
+              def log_message(self, format, *args):
+                  pass  # Silenciar logs padrão
+          
+          def background_health_check():
+              while True:
+                  try:
+                      print("🏥 Verificando saúde dos serviços...")
+                      
+                      # Check user service
+                      req = urllib.request.Request('http://user-service:8080/health')
+                      with urllib.request.urlopen(req, timeout=5) as response:
+                          print("✅ User Service: OK")
+                      
+                      # Check order service  
+                      req = urllib.request.Request('http://order-service:8080/health')
+                      with urllib.request.urlopen(req, timeout=5) as response:
+                          print("✅ Order Service: OK")
+                          
+                  except Exception as e:
+                      print(f"⚠️ Health check falhou: {e}")
+                  
+                  time.sleep(20)
+          
+          if __name__ == '__main__':
+              # Start background health check
+              health_thread = threading.Thread(target=background_health_check, daemon=True)
+              health_thread.start()
+              
+              print("🚀 API Gateway rodando na porta 8080")
+              server = HTTPServer(('0.0.0.0', 8080), GatewayHandler)
+              server.serve_forever()
+          EOF
+          
+          python gateway.py
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OTEL_SERVICE_NAME
+          value: "api-gateway"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=api-gateway,service.version=1.0.0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080

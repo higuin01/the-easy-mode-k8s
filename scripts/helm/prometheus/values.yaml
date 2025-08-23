@@ -19,6 +19,10 @@ grafana:
       protocol: http  # força HTTP dentro do pod
       http_port: 3000
       root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+    # Enable tracing
+    tracing.opentelemetry.otlp:
+      address: otel-collector-collector.monitoring.svc.cluster.local:4317
+      propagation: jaeger
   service:
     type: ClusterIP  # só para comunicação interna, não expõe direto
   persistence:
@@ -27,6 +31,11 @@ grafana:
     size: 5Gi
   
   adminPassword: admin123
+  
+  # Environment variables for tracing
+  env:
+    GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS: "otel-collector-collector.monitoring.svc.cluster.local:4317"
+    GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION: "jaeger"
 
 alertmanager:
   alertmanagerSpec:
